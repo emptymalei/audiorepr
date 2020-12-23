@@ -1,82 +1,82 @@
 from midiutil import MIDIFile
-import numpy as np
 import pandas as pd
+from .data import (
+    shape_validator as _shape_validator,
+    data_standardize as _pitch_data_standardize,
+)
+
+from loguru import logger
 
 
-def _shape_validator(data):
-
-    shape = data.shape
-
-    if len(shape) > 2:
-        raise ValueError(f"input data:\n{data}\nshould have rank 1 or 2.")
-    elif len(shape) == 2 and shape[-1] > 12:
-        raise ValueError(f"input data:\n{data}\nshould have less or equal to 12 columns.")
-    elif len(shape) == 1:
-        data = data.reshape(len(data),1)
-
-
-def _data_standardize(data):
+def track(pitches, midi_object, track, **params):
     """
-    _data_standardize standardize data input
+    track builds the specified track for the midi object
 
-    :param data: Input data
-    :type data: Union[pd.DataFrame, pd.Series, np.ndarray, list, tuple]
+    :param pitches: specified series of pitch for the track
+    :type pitches: Union[pd.Series, np.ndarray, list, tuple]
+    :param midi_object: instantiated midi object
+    :param track: specified track id
+    :type track: int
     """
+    channel = params.get("channel", 0)
+    duration = params.get("duration", 2)
+    begin_beat = params.get("begin_beat", 0)  # In beats
+    volume = params.get("volume", 127)  # 0-127, as per the MIDI standard
 
-    if isinstance(data, (pd.DataFrame, pd.Series)):
-        data = data.to_numpy()
-    elif isinstance(data, np.ndarray):
-        data = data
-    elif isinstance(data, (list, tuple)):
-        data = np.array(data)
+    for t, pitch in enumerate(pitches):
+        midi_object.addNote(track, channel, pitch, begin_beat + t, duration, volume)
+
+    return
+
+
+def audiolize(data, target, **params):
+    """
+    audiolize audiolizes the input data
+
+    :param data: input tabular data to be audiolized
+    :type data: Union[pd.DataFrame, pd.Series, ndarray, list, tuple]
+    """
+    midi_data = data.copy()
+
+    # get params
+    midi_object = params.get("midi_object")
+    channel = params.get("channel", 0)
+    begin_beat = params.get("begin_beat", 0)  # In beats
+    duration = params.get("duration", 2)  # In beats
+    tempo = params.get("tempo", 100)  # In BPM
+    volume = params.get("volume", 127)  # 0-127, as per the MIDI standard
+    # determine track names if the input data is a dataframe
+    pitch_columns = params.get("pitch_columns")
+    track_names = params.get("track_names")
+    if isinstance(midi_data, pd.DataFrame):
+        track_names = midi_data.columns.tolist()
+        logger.debug(f"Track names:\n{track_names}")
+
+    # standardize data
+    if pitch_columns:
+        pitch_data = midi_data[pitch_columns]
     else:
-        raise TypeError(f"Input data\n {data} \nshould be one of the following: DataFrame, Series, ndarray, list, tuple")
+        pitch_data = midi_data.copy()
+    pitch_data = _pitch_data_standardize(pitch_data)
+    pitches = pitch_data.get("pitches")
+    n_tracks = pitch_data.get("n_tracks")
 
-    _shape_validator(data)
+    # instantiate midifile object
+    if midi_object is None:
+        midi_object = MIDIFile(n_tracks)
 
-    return data
+    for track in range(n_tracks):
+        # add tempo
+        midi_object.addTempo(track, 0, tempo)
 
+        # add track names if track names are given
+        if track_names:
+            midi_object.addTrackName(track, 0, track_names[track])
 
-def audiolize(data, **params):
+    for track, pitches in enumerate(pitch_data):
+        for t, pitch in enumerate(pitches):
+            midi_object.addNote(track, channel, pitch, begin_beat + t, duration, volume)
 
-    data = _data_standardize(data)
-
-    shape = data.shape
-
-    if len(shape) == 2:
-        n_tracks = shape[-1]
-    else:
-        n_tracks = 1
-
-    degrees_list  = data
-
-    track    = 0
-    channel  = 0
-    time     = 0    # In beats
-    duration = 2    # In beats
-    tempo    = 100   # In BPM
-    volume   = 127  # 0-127, as per the MIDI standard
-
-    MyMIDI = MIDIFile(3)  # One track, defaults to format 1 (tempo track is created
-                        # automatically)
-
-    MyMIDI.addTrackName(track,time,"Sample Track")
-    #MyMIDI.addTempo(track,time,360)
-
-    MyMIDI.addTempo(track, time, tempo)
-
-    for degrees in degrees_list:
-        for i, pitch in enumerate(degrees):
-            MyMIDI.addNote(track, channel, pitch, time + i, duration, volume)
-
-        track += 1
-
-    #for degrees in degrees_list:
-    #    for i, pitch in enumerate(degrees):
-    #        MyMIDI.addNote(track, channel, pitch, time + i, duration, volume)
-    #
-    #    channel += 1
-
-
-    with open("demo-music.mid", "wb") as output_file:
-        MyMIDI.writeFile(output_file)
+    # export midi file
+    with open(target, "wb") as output_file:
+        midi_object.writeFile(output_file)
