@@ -8,9 +8,9 @@ from .data import (
 from loguru import logger
 
 
-def track(pitches, midi_object, track, **params):
+def build_track(pitches, midi_object, track, **params):
     """
-    track builds the specified track for the midi object
+    build_track builds the specified track for the midi object
 
     :param pitches: specified series of pitch for the track
     :type pitches: Union[pd.Series, np.ndarray, list, tuple]
@@ -25,8 +25,6 @@ def track(pitches, midi_object, track, **params):
 
     for t, pitch in enumerate(pitches):
         midi_object.addNote(track, channel, pitch, begin_beat + t, duration, volume)
-
-    return
 
 
 def audiolizer(data, target, **params):
@@ -58,7 +56,7 @@ def audiolizer(data, target, **params):
     else:
         pitch_data = midi_data.copy()
     pitch_data = _pitch_data_standardize(pitch_data)
-    pitches = pitch_data.get("pitches")
+    all_track_pitches = pitch_data.get("pitches")
     n_tracks = pitch_data.get("n_tracks")
 
     # instantiate midifile object
@@ -73,9 +71,16 @@ def audiolizer(data, target, **params):
         if track_names:
             midi_object.addTrackName(track, 0, track_names[track])
 
-    for track, pitches in enumerate(pitch_data):
-        for t, pitch in enumerate(pitches):
-            midi_object.addNote(track, channel, pitch, begin_beat + t, duration, volume)
+    for track, pitches in enumerate(all_track_pitches):
+        build_track(
+            pitches,
+            midi_object,
+            track,
+            channel=channel,
+            duration=duration,
+            begin_beat=begin_beat,
+            volume=volume,
+        )
 
     # export midi file
     with open(target, "wb") as output_file:
