@@ -29,7 +29,7 @@ def track(pitches, midi_object, track, **params):
     return
 
 
-def audiolize(data, target, **params):
+def audiolizer(data, target, **params):
     """
     audiolize audiolizes the input data
 
