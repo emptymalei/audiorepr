@@ -5,6 +5,8 @@ from .data import (
     data_standardize as _pitch_data_standardize,
 )
 
+from .mapper import LinearMinMaxMapper
+
 from loguru import logger
 
 
@@ -24,7 +26,9 @@ def build_track(pitches, midi_object, track, **params):
     volume = params.get("volume", 127)  # 0-127, as per the MIDI standard
 
     for t, pitch in enumerate(pitches):
-        midi_object.addNote(track, channel, pitch, begin_beat + t, duration, volume)
+        midi_object.addNote(
+            track, channel, pitch, begin_beat + t * duration, duration, volume
+        )
 
 
 def audiolizer(data, target, **params):
@@ -41,8 +45,14 @@ def audiolizer(data, target, **params):
     channel = params.get("channel", 0)
     begin_beat = params.get("begin_beat", 0)  # In beats
     duration = params.get("duration", 2)  # In beats
-    tempo = params.get("tempo", 100)  # In BPM
+    tempo = params.get("tempo", 200)  # In BPM
     volume = params.get("volume", 127)  # 0-127, as per the MIDI standard
+
+    # set mapper params
+    mapper = params.get("mapper")
+    pitch_min = params.get("pitch_min")
+    pitch_max = params.get("pitch_max")
+
     # determine track names if the input data is a dataframe
     pitch_columns = params.get("pitch_columns")
     track_names = params.get("track_names")
@@ -52,16 +62,26 @@ def audiolizer(data, target, **params):
 
     # standardize data
     if pitch_columns:
-        pitch_data = midi_data[pitch_columns]
+        pitch_raw_data = midi_data[pitch_columns]
     else:
-        pitch_data = midi_data.copy()
-    pitch_data = _pitch_data_standardize(pitch_data)
-    all_track_pitches = pitch_data.get("pitches")
-    n_tracks = pitch_data.get("n_tracks")
+        pitch_raw_data = midi_data.copy()
+    pitch_raw_data = _pitch_data_standardize(pitch_raw_data)
+    all_track_pitches = pitch_raw_data.get("pitches")
+    n_tracks = pitch_raw_data.get("n_tracks")
+    track_max = pitch_raw_data.get("max")
+    track_min = pitch_raw_data.get("min")
 
     # instantiate midifile object
     if midi_object is None:
         midi_object = MIDIFile(n_tracks)
+
+    if mapper is None:
+        mapper = LinearMinMaxMapper(
+            pitch_min=pitch_min,
+            pitch_max=pitch_max,
+            data_min=min(track_min),
+            data_max=max(track_max),
+        )
 
     for track in range(n_tracks):
         # add tempo
@@ -72,6 +92,8 @@ def audiolizer(data, target, **params):
             midi_object.addTrackName(track, 0, track_names[track])
 
     for track, pitches in enumerate(all_track_pitches):
+        pitches = mapper.map(pitches)
+
         build_track(
             pitches,
             midi_object,

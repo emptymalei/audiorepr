@@ -47,7 +47,12 @@ def data_standardize(data):
     shape = shape_validator(data)
     n_tracks = shape[-1]
 
-    res = {"n_tracks": n_tracks, "pitches": np.transpose(data)}
+    res = {
+        "n_tracks": n_tracks,
+        "pitches": np.transpose(data),
+        "max": np.amax(data, axis=1),
+        "min": np.amin(data, axis=1),
+    }
     logger.debug(f"number of tracks: {n_tracks}")
 
     return res
