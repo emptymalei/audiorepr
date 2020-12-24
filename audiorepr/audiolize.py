@@ -53,9 +53,12 @@ def audiolizer(data, target, **params):
     # determine track names if the input data is a dataframe
     pitch_columns = params.get("pitch_columns")
     track_names = params.get("track_names")
-    if isinstance(midi_data, pd.DataFrame):
-        track_names = midi_data.columns.tolist()
-        logger.debug(f"Track names:\n{track_names}")
+    if track_names is None:
+        if pitch_columns is None and isinstance(midi_data, pd.DataFrame):
+            track_names = midi_data.columns.tolist()
+            logger.debug(f"Track names:\n{track_names}")
+        elif pitch_columns is not None:
+            track_names = pitch_columns
 
     # standardize data
     if pitch_columns:
