@@ -1,13 +1,10 @@
-from midiutil import MIDIFile
 import pandas as pd
-from .data import (
-    shape_validator as _shape_validator,
-    data_standardize as _pitch_data_standardize,
-)
-
-from .mapper import LinearMinMaxMapper
-
 from loguru import logger
+from midiutil import MIDIFile
+
+from .data import data_standardize as _pitch_data_standardize
+from .data import shape_validator as _shape_validator
+from .mapper import LinearMinMaxMapper
 
 
 def build_track(pitches, midi_object, track, **params):
