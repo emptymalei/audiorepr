@@ -3,18 +3,8 @@ import sys, os
 
 from audiorepr import audiolize
 
-ecdc = "https://raw.githubusercontent.com/covid19-eu-zh/covid19-eu-data/master/dataset/covid-19-ecdc.csv"
+ecdc = "https://gist.githubusercontent.com/emptymalei/90869e811b4aa118a7d28a5944587a64/raw/1534670c8a3859ab3a6ae8e9ead6795248a3e664/ecdc%2520covid%252019%2520data"
 
 df = pd.read_csv(ecdc)
-df["datetime"] = pd.to_datetime(df["datetime"])
-df = df.loc[df["datetime"] <= pd.to_datetime("2020-12-14T00:00:00")]
-df = (
-    df.pivot(index="datetime", columns="country", values="cases")
-    .sort_index()[["DE", "AT", "FR"]]
-    .diff()
-    .dropna()
-)
-
-print(df.head())
 
 audiolize.audiolizer(df, target="/tmp/test.midi", pitch_columns=["DE", "AT", "FR"])
