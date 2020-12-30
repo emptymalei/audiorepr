@@ -1,3 +1,4 @@
 midiutil>=1.2.1
 pandas>=0.23
 loguru>=0.5.3
+click==7.1.2

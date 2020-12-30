@@ -34,6 +34,7 @@ def setup():
         install_requires=_requirements(),
         include_package_data=True,
         extras_require={"docs": ["sphinx>=2.4.1", "sphinx-rtd-theme>=0.4.3"]},
+        entry_points={"console_scripts": ["audiorepr=audiorepr.command:audiorepr"]},
         test_suite="nose.collector",
         tests_require=["nose"],
         zip_safe=False,
