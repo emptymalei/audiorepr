@@ -37,7 +37,7 @@ def help():
 @audiorepr.command()
 @click.option(
     '-d', '--data',
-    type=click.Path(exists=True),
+    type=str,
     prompt=f"Please specify your data file\n"
     f"Your current working directory is {__CWD__}\n"
     f"Use absolute path or path relative to {__CWD__}.\n"
@@ -48,12 +48,13 @@ def help():
     prompt=f"Please specify your output file\n"
     f"Your current working directory is {__CWD__}\n"
     f"Use absolute path or path relative to {__CWD__}.\n"
+    f"URL is also possible."
 )
 @click.option(
-    '-c', '--columns',
+    '-c', '--column',
     multiple=True, default=None
 )
-def create(data, target, columns):
+def create(data, target, column):
     """
     creates audio from data file
     """
@@ -61,12 +62,17 @@ def create(data, target, columns):
     click.echo(
         f"Using {data} as data source."
     )
+    if column is not None:
+        column = list(column)
+        click.echo(
+            f"Using columns:\n{column}"
+        )
 
     df = pd.read_csv(data)
     click.echo(
         f"Data loaded"
     )
-    audiolize.audiolizer(df, target=target, pitch_columns=columns)
+    audiolize.audiolizer(df, target=target, pitch_columns=column)
     click.echo(
         f"Audio file has been saved as {target}"
     )
