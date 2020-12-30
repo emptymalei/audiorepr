@@ -2,6 +2,9 @@
 
 A python package to represent data using musical notes.
 
+[![Documentation Status](https://readthedocs.org/projects/audiorepr/badge/?version=latest)](https://audiorepr.readthedocs.io/en/latest/?badge=latest)
+
+
 ## Installation
 
 ```
