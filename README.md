@@ -37,7 +37,7 @@ Play the output midi file using the player of your choice.
 
 ## Documentation
 
-[WIP]
+[Read the Documentation Here.](https://audiorepr.readthedocs.io)
 
 ## Development
 
